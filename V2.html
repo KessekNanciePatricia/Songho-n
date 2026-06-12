@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Songho — Version 2 (Multijoueur)</title>
+<style>
+  /* Même style que Version 1 */
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;500;600&display=swap');
+  :root {
+    --terre:#8B4513; --or:#DAA520; --or-clair:#F5DEB3;
+    --vert:#2D6A2D; --fond:#1A0A00; --fond-clair:#2C1A08;
+    --texte:#F5DEB3; --texte-doux:#C4A96A;
+    --nord:#E8A020; --sud:#4CAF50;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body {
+    font-family:'Inter',sans-serif; background:var(--fond);
+    color:var(--texte); min-height:100vh;
+    display:flex; flex-direction:column; align-items:center; padding:20px;
+  }
+  h1 { font-family:'Cinzel',serif; font-size:36px; color:var(--or); letter-spacing:4px; text-align:center; margin-bottom:4px; }
+  .subtitle { font-size:12px; color:var(--texte-doux); letter-spacing:2px; text-transform:uppercase; text-align:center; margin-bottom:20px; }
+
+  /* LOBBY */
+  .lobby {
+    background:var(--fond-clair); border-radius:16px; padding:30px;
+    border:1px solid rgba(139,69,19,0.4); max-width:400px; width:100%; text-align:center;
+  }
+  .lobby h2 { font-family:'Cinzel',serif; color:var(--or); margin-bottom:16px; }
+  .lobby p { font-size:13px; color:var(--texte-doux); margin-bottom:20px; line-height:1.6; }
+  .input-name {
+    width:100%; padding:12px; border-radius:8px; border:1px solid rgba(218,165,32,0.3);
+    background:rgba(0,0,0,0.3); color:var(--texte); font-size:14px; margin-bottom:12px;
+    outline:none; text-align:center;
+  }
+  .input-name:focus { border-color:var(--or); }
+
+  /* BOUTONS */
+  .btn {
+    padding:12px 28px; border-radius:8px; border:none; cursor:pointer;
+    font-family:'Inter',sans-serif; font-size:13px; font-weight:600;
+    letter-spacing:1px; text-transform:uppercase; transition:all 0.2s; width:100%; margin-bottom:8px;
+  }
+  .btn-primary { background:var(--or); color:var(--fond); }
+  .btn-primary:hover { background:#F0C040; transform:translateY(-1px); }
+  .btn-secondary { background:transparent; color:var(--texte-doux); border:1px solid rgba(196,169,106,0.3); }
+  .btn-secondary:hover { border-color:var(--or); color:var(--or); }
+
+  /* BADGE ROLE */
+  .role-badge {
+    display:inline-block; padding:8px 20px; border-radius:20px;
+    font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase; margin-bottom:16px;
+  }
+  .role-nord { background:rgba(232,160,32,0.2); border:1px solid var(--nord); color:var(--nord); }
+  .role-sud { background:rgba(76,175,80,0.2); border:1px solid var(--sud); color:var(--sud); }
+
+  /* STATUS CONNEXION */
+  .status-bar {
+    background:var(--fond-clair); border-radius:8px; padding:8px 16px;
+    font-size:12px; color:var(--texte-doux); text-align:center; margin-bottom:12px;
+    border:1px solid rgba(255,255,255,0.05);
+  }
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
+  .dot.green { background:#4CAF50; animation:blink 1.5s infinite; }
+  .dot.orange { background:#FF9800; animation:blink 1s infinite; }
+  .dot.red { background:#F44336; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* SCORES */
+  .scores { display:flex; justify-content:space-between; gap:10px; margin-bottom:14px; width:100%; max-width:900px; }
+  .score-card {
+    flex:1; background:var(--fond-clair); border-radius:12px; padding:12px 16px;
+    display:flex; flex-direction:column; align-items:center;
+    border:2px solid transparent; transition:all 0.3s; position:relative; overflow:hidden;
+  }
+  .score-card::before { content:''; position:absolute; top:0;left:0;right:0; height:3px; }
+  .score-card.nord::before { background:var(--nord); }
+  .score-card.sud::before { background:var(--sud); }
+  .score-card.active { border-color:var(--or); box-shadow:0 0 20px rgba(218,165,32,0.3); }
+  .score-card.mon-tour { animation:pulse-card 1s infinite; }
+  @keyframes pulse-card {
+    0%,100%{box-shadow:0 0 10px rgba(218,165,32,0.2)}
+    50%{box-shadow:0 0 25px rgba(218,165,32,0.6)}
+  }
+  .score-label { font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--texte-doux); }
+  .score-name { font-family:'Cinzel',serif; font-size:14px; font-weight:700; margin:4px 0; }
+  .score-card.nord .score-name { color:var(--nord); }
+  .score-card.sud .score-name { color:var(--sud); }
+  .score-value { font-size:32px; font-weight:700; }
+  .score-bar-wrap { width:100%; height:5px; background:rgba(255,255,255,0.1); border-radius:3px; margin-top:6px; overflow:hidden; }
+  .score-bar { height:100%; border-radius:3px; transition:width 0.5s; }
+  .score-card.nord .score-bar { background:var(--nord); }
+  .score-card.sud .score-bar { background:var(--sud); }
+  .tour-badge { background:rgba(218,165,32,0.1); border:1px solid rgba(218,165,32,0.2); border-radius:8px; padding:8px 12px; text-align:center; font-size:11px; color:var(--or); flex-shrink:0; }
+
+  /* PLATEAU */
+  .board {
+    background:var(--fond-clair); border-radius:20px; padding:18px;
+    border:2px solid rgba(139,69,19,0.4); width:100%; max-width:900px;
+    box-shadow:0 0 40px rgba(0,0,0,0.5);
+  }
+  .player-label { font-size:10px; letter-spacing:3px; text-transform:uppercase; text-align:center; margin-bottom:8px; font-weight:600; }
+  .player-label.nord { color:var(--nord); }
+  .player-label.sud { color:var(--sud); }
+  .row { display:flex; justify-content:center; gap:8px; margin:4px 0; }
+  .pit {
+    width:65px; height:65px; border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, #3D1F0A, #1A0A00);
+    border:2px solid rgba(139,69,19,0.5);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    cursor:pointer; transition:all 0.2s; position:relative;
+    box-shadow:inset 0 4px 8px rgba(0,0,0,0.5);
+    user-select:none;
+  }
+  .pit:hover:not(.empty):not(.disabled) { transform:scale(1.08); border-color:var(--or); box-shadow:inset 0 4px 8px rgba(0,0,0,0.3),0 4px 16px rgba(218,165,32,0.4); }
+  .pit.legal { border-color:var(--or); animation:pulse-pit 1.5s infinite; }
+  .pit.legal.nord-legal { border-color:var(--nord); }
+  .pit.legal.sud-legal { border-color:var(--sud); }
+  @keyframes pulse-pit {
+    0%,100%{box-shadow:inset 0 4px 8px rgba(0,0,0,0.4),0 0 8px rgba(218,165,32,0.3)}
+    50%{box-shadow:inset 0 4px 8px rgba(0,0,0,0.4),0 0 20px rgba(218,165,32,0.6)}
+  }
+  .pit.empty { cursor:not-allowed; opacity:0.4; }
+  .pit.disabled { cursor:not-allowed; opacity:0.6; }
+  .pit.my-pit { cursor:pointer; }
+  .pit.not-my-pit { cursor:not-allowed; }
+  .pit-count { font-size:20px; font-weight:700; }
+  .pit-index { font-size:9px; color:rgba(196,169,106,0.4); margin-top:1px; }
+  .divider { height:2px; background:linear-gradient(90deg,transparent,rgba(139,69,19,0.5),rgba(218,165,32,0.3),rgba(139,69,19,0.5),transparent); margin:10px 0; }
+
+  /* MESSAGE */
+  .message-box {
+    background:var(--fond-clair); border-radius:10px; padding:12px 18px;
+    border-left:4px solid var(--or); font-size:13px; min-height:44px;
+    display:flex; align-items:center; margin-top:12px; width:100%; max-width:900px;
+    transition:all 0.3s;
+  }
+  .message-box.win { border-left-color:var(--or); background:rgba(218,165,32,0.1); font-size:15px; font-weight:600; justify-content:center; text-align:center; }
+  .message-box.attente { border-left-color:#FF9800; }
+
+  /* CONTROLS */
+  .controls { display:flex; gap:10px; margin-top:12px; justify-content:center; flex-wrap:wrap; width:100%; max-width:900px; }
+  .controls .btn { width:auto; }
+
+  .game-area { display:none; width:100%; display:flex; flex-direction:column; align-items:center; }
+
+  @media(max-width:600px){
+    .pit{width:42px;height:42px;}
+    .pit-count{font-size:15px;}
+    .row{gap:4px;}
+  }
+</style>
+</head>
+<body>
+
+<h1>SONGHO</h1>
+<p class="subtitle">Version 2 — Multijoueur en réseau</p>
+
+<!-- LOBBY -->
+<div class="lobby" id="lobby">
+  <h2>Rejoindre une partie</h2>
+  <p>Entre ton nom et rejoins la partie.<br/>Le premier joueur sera <strong style="color:var(--sud)">Sud</strong>, le second sera <strong style="color:var(--nord)">Nord</strong>.</p>
+  <input class="input-name" id="player-name" type="text" placeholder="Ton prénom..." maxlength="20"/>
+  <button class="btn btn-primary" onclick="joinGame()">🌱 Rejoindre la partie</button>
+  <button class="btn btn-secondary" onclick="resetGame()">🔄 Réinitialiser</button>
+  <div id="lobby-msg" style="margin-top:12px; font-size:13px; color:var(--texte-doux);"></div>
+</div>
+
+<!-- ZONE DE JEU -->
+<div class="game-area" id="game-area">
+  <div class="status-bar" id="status-bar">
+    <span class="dot orange" id="status-dot"></span>
+    <span id="status-text">Connexion...</span>
+  </div>
+
+  <div id="role-display"></div>
+
+  <div class="scores">
+    <div class="score-card nord" id="card-nord">
+      <div class="score-label">Joueur</div>
+      <div class="score-name" id="name-nord">NORD</div>
+      <div class="score-value" id="score-nord">0</div>
+      <div class="score-bar-wrap"><div class="score-bar" id="bar-nord" style="width:0%"></div></div>
+    </div>
+    <div class="tour-badge">
+      Tour n°<span id="move-num">1</span><br/>
+      <small id="tour-label">...</small>
+    </div>
+    <div class="score-card sud" id="card-sud">
+      <div class="score-label">Joueur</div>
+      <div class="score-name" id="name-sud">SUD</div>
+      <div class="score-value" id="score-sud">0</div>
+      <div class="score-bar-wrap"><div class="score-bar" id="bar-sud" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="board">
+    <div class="player-label nord" id="label-nord">↑ NORD ↑</div>
+    <div class="row" id="row-nord"></div>
+    <div class="divider"></div>
+    <div class="row" id="row-sud"></div>
+    <div class="player-label sud" id="label-sud">↓ SUD ↓</div>
+  </div>
+
+  <div class="message-box" id="message">Chargement...</div>
+
+  <div class="controls">
+    <button class="btn btn-secondary" onclick="document.getElementById('lobby').style.display='block'; document.getElementById('game-area').style.display='none';">← Lobby</button>
+    <button class="btn btn-secondary" onclick="resetGame()">🔄 Nouvelle partie</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CLIENT VERSION 2 — AJAX POLLING
+// ============================================================
+
+let myRole = null;      // 'north' ou 'south'
+let myName = '';
+let gameState = null;
+let pollingInterval = null;
+let lastMoveNumber = -1;
+
+// ---- Rejoindre la partie ----
+async function joinGame(){
+  const nameInput = document.getElementById('player-name');
+  myName = nameInput.value.trim() || 'Joueur';
+
+  try {
+    const res = await fetch('/api/join', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ playerName: myName })
+    });
+    const data = await res.json();
+
+    if(!data.ok){
+      document.getElementById('lobby-msg').textContent = '⚠️ ' + data.message;
+      return;
+    }
+
+    myRole = data.role;
+    gameState = data.gameState;
+
+    // Cacher lobby, montrer jeu
+    document.getElementById('lobby').style.display = 'none';
+    document.getElementById('game-area').style.display = 'flex';
+
+    // Afficher badge rôle
+    const roleDiv = document.getElementById('role-display');
+    roleDiv.innerHTML = `<div class="role-badge role-${myRole}">
+      Tu joues : ${myRole==='north'?'⬆️ NORD':'⬇️ SUD'}
+    </div>`;
+
+    renderAll();
+    startPolling();
+
+  } catch(e){
+    document.getElementById('lobby-msg').textContent = '❌ Erreur de connexion au serveur.';
+  }
+}
+
+// ---- Polling Ajax (toutes les 1.5 secondes) ----
+function startPolling(){
+  if(pollingInterval) clearInterval(pollingInterval);
+  pollingInterval = setInterval(async () => {
+    try {
+      const res = await fetch('/api/state');
+      const data = await res.json();
+
+      if(data.ok && data.gameState){
+        const newState = data.gameState;
+
+        // Mettre à jour les noms des joueurs
+        if(data.players){
+          document.getElementById('name-nord').textContent = data.players.north || 'NORD';
+          document.getElementById('name-sud').textContent = data.players.south || 'SUD';
+        }
+
+        // Si l'état a changé (nouveau coup joué par l'adversaire)
+        if(newState.moveNumber !== lastMoveNumber){
+          gameState = newState;
+          lastMoveNumber = newState.moveNumber;
+          renderAll();
+        }
+
+        // Statut connexion
+        updateConnectionStatus(data.players);
+      }
+    } catch(e){
+      setStatus('red', '❌ Connexion perdue...');
+    }
+  }, 1500);
+}
+
+// ---- Jouer un coup ----
+async function playMove(player, pitIndex){
+  if(!myRole || player !== myRole) return;
+  if(!gameState || gameState.status !== 'playing') return;
+  if(gameState.currentPlayer !== myRole){
+    showMessage("⏳ Ce n'est pas ton tour, attends l'adversaire...", 'attente');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/move', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ player, pitIndex })
+    });
+    const data = await res.json();
+
+    if(!data.ok){
+      showMessage('⚠️ ' + data.error);
+      return;
+    }
+
+    gameState = data.state || data.gameState;
+    lastMoveNumber = gameState.moveNumber;
+    renderAll();
+
+    // Message résultat
+    if(data.action){
+      if(data.action.type==='forced-donation'){
+        showMessage(`Don forcé : ${data.action.donated} graine(s) à l'adversaire.`);
+      } else if(data.action.capture && data.action.capture.captured>0){
+        showMessage(`✅ ${data.action.capture.captured} graine(s) capturée(s) !`);
+      }
+    }
+  } catch(e){
+    showMessage('❌ Erreur réseau.');
+  }
+}
+
+// ---- Reset ----
+async function resetGame(){
+  try {
+    await fetch('/api/reset', { method:'POST' });
+    myRole = null;
+    gameState = null;
+    if(pollingInterval) clearInterval(pollingInterval);
+    document.getElementById('lobby').style.display = 'block';
+    document.getElementById('game-area').style.display = 'none';
+    document.getElementById('lobby-msg').textContent = '';
+    document.getElementById('player-name').value = '';
+  } catch(e){}
+}
+
+// ---- Statut connexion ----
+function updateConnectionStatus(players){
+  if(!players) return;
+  if(players.north && players.south){
+    setStatus('green', `✅ ${players.south} (Sud) vs ${players.north} (Nord) — En ligne`);
+  } else if(players.south && !players.north){
+    setStatus('orange', `⏳ En attente de Nord... (${players.south} est connecté)`);
+  } else {
+    setStatus('orange', '⏳ En attente des joueurs...');
+  }
+}
+
+function setStatus(color, text){
+  document.getElementById('status-dot').className = 'dot ' + color;
+  document.getElementById('status-text').textContent = text;
+}
+
+// ---- Rendu ----
+function renderAll(){
+  if(!gameState) return;
+  renderBoard();
+  renderScores();
+  renderMessage();
+  renderLegalHighlights();
+}
+
+function renderBoard(){
+  const rowNord = document.getElementById('row-nord');
+  const rowSud = document.getElementById('row-sud');
+  rowNord.innerHTML='';
+  rowSud.innerHTML='';
+  for(let i=0;i<7;i++) rowNord.appendChild(makePit('north',i));
+  for(let i=6;i>=0;i--) rowSud.appendChild(makePit('south',i));
+}
+
+function makePit(player, pitIndex){
+  const seeds = gameState.board[player][pitIndex];
+  const pit = document.createElement('div');
+  pit.className = 'pit';
+  pit.id = `pit-${player}-${pitIndex}`;
+
+  if(seeds===0) pit.classList.add('empty');
+
+  // Peut-on cliquer ?
+  const isMyPit = player === myRole;
+  const isMyTurn = gameState.currentPlayer === myRole;
+
+  if(isMyPit && isMyTurn && seeds>0 && gameState.status==='playing'){
+    pit.classList.add('my-pit');
+    pit.onclick = () => playMove(player, pitIndex);
+  } else {
+    pit.classList.add('not-my-pit');
+  }
+
+  pit.innerHTML = `
+    <div class="pit-count">${seeds}</div>
+    <div class="pit-index">${player==='north'?'N':'S'}${pitIndex}</div>
+  `;
+  return pit;
+}
+
+function renderLegalHighlights(){
+  if(!gameState || gameState.status!=='playing') return;
+  if(gameState.currentPlayer !== myRole) return;
+
+  // Calculer les coups légaux côté client (pour l'affichage uniquement)
+  const board = gameState.board;
+  for(let i=0;i<7;i++){
+    if(board[myRole][i]>0){
+      const pit = document.getElementById(`pit-${myRole}-${i}`);
+      if(pit){
+        pit.classList.add('legal');
+        pit.classList.add(myRole==='north'?'nord-legal':'sud-legal');
+      }
+    }
+  }
+}
+
+function renderScores(){
+  if(!gameState) return;
+  document.getElementById('score-nord').textContent = gameState.scores.north;
+  document.getElementById('score-sud').textContent = gameState.scores.south;
+  document.getElementById('bar-nord').style.width = Math.min(100,(gameState.scores.north/40)*100)+'%';
+  document.getElementById('bar-sud').style.width = Math.min(100,(gameState.scores.south/40)*100)+'%';
+  document.getElementById('move-num').textContent = gameState.moveNumber+1;
+
+  const isMyTurn = gameState.currentPlayer === myRole;
+  document.getElementById('tour-label').textContent = gameState.status==='playing'
+    ? (isMyTurn ? '🟢 TON TOUR !' : '⏳ Tour adversaire')
+    : 'Partie terminée';
+
+  const cNord = document.getElementById('card-nord');
+  const cSud = document.getElementById('card-sud');
+  cNord.classList.toggle('active', gameState.currentPlayer==='north');
+  cSud.classList.toggle('active', gameState.currentPlayer==='south');
+  cNord.classList.toggle('mon-tour', gameState.currentPlayer==='north' && myRole==='north');
+  cSud.classList.toggle('mon-tour', gameState.currentPlayer==='south' && myRole==='south');
+}
+
+function renderMessage(){
+  if(!gameState) return;
+  if(gameState.status==='ended'){
+    const w = gameState.winner;
+    const msg = w==='draw'
+      ? '🤝 Match nul !'
+      : `🏆 Victoire de ${w==='north'?'NORD':'SUD'} avec ${gameState.scores[w]} graines !`;
+    showMessage(msg, 'win');
+  } else {
+    const isMyTurn = gameState.currentPlayer === myRole;
+    if(isMyTurn){
+      showMessage(`🟢 C'est TON TOUR — clique sur une de tes cases !`);
+    } else {
+      showMessage(`⏳ Attends que l'adversaire joue...`, 'attente');
+    }
+  }
+}
+
+function showMessage(text, type){
+  const box = document.getElementById('message');
+  box.className = 'message-box' + (type?' '+type:'');
+  box.textContent = text;
+}
+</script>
+</body>
+</html>
