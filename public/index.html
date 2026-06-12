@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Songho — Jeu Traditionnel Camerounais</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;500;600&display=swap');
+
+  :root {
+    --terre: #8B4513;
+    --terre-clair: #D2691E;
+    --or: #DAA520;
+    --or-clair: #F5DEB3;
+    --vert: #2D6A2D;
+    --vert-clair: #4CAF50;
+    --rouge: #B22222;
+    --fond: #1A0A00;
+    --fond-clair: #2C1A08;
+    --texte: #F5DEB3;
+    --texte-doux: #C4A96A;
+    --graine: #8B4513;
+    --graine-bord: #D2691E;
+    --nord-couleur: #E8A020;
+    --sud-couleur: #4CAF50;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--fond);
+    color: var(--texte);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(139,69,19,0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(45,106,45,0.1) 0%, transparent 50%);
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  header h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(28px, 5vw, 48px);
+    color: var(--or);
+    letter-spacing: 4px;
+    text-shadow: 0 0 30px rgba(218,165,32,0.4);
+  }
+
+  header p {
+    font-size: 13px;
+    color: var(--texte-doux);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .game-container {
+    width: 100%;
+    max-width: 900px;
+  }
+
+  /* SCORES */
+  .scores {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    gap: 12px;
+  }
+
+  .score-card {
+    flex: 1;
+    background: var(--fond-clair);
+    border-radius: 12px;
+    padding: 14px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 2px solid transparent;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .score-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+
+  .score-card.nord::before { background: var(--nord-couleur); }
+  .score-card.sud::before { background: var(--sud-couleur); }
+
+  .score-card.active {
+    border-color: var(--or);
+    box-shadow: 0 0 20px rgba(218,165,32,0.3);
+  }
+
+  .score-card.nord.active { border-color: var(--nord-couleur); }
+  .score-card.sud.active { border-color: var(--sud-couleur); }
+
+  .score-label {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--texte-doux);
+    margin-bottom: 4px;
+  }
+
+  .score-name {
+    font-family: 'Cinzel', serif;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .score-card.nord .score-name { color: var(--nord-couleur); }
+  .score-card.sud .score-name { color: var(--sud-couleur); }
+
+  .score-value {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--texte);
+    line-height: 1;
+  }
+
+  .score-bar-wrap {
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+
+  .score-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+  }
+
+  .score-card.nord .score-bar { background: var(--nord-couleur); }
+  .score-card.sud .score-bar { background: var(--sud-couleur); }
+
+  .tour-badge {
+    background: rgba(218,165,32,0.15);
+    border: 1px solid rgba(218,165,32,0.3);
+    border-radius: 8px;
+    padding: 8px 16px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--or);
+    flex-shrink: 0;
+  }
+
+  /* PLATEAU */
+  .board {
+    background: var(--fond-clair);
+    border-radius: 20px;
+    padding: 20px;
+    border: 2px solid rgba(139,69,19,0.4);
+    box-shadow:
+      0 0 40px rgba(0,0,0,0.5),
+      inset 0 0 60px rgba(139,69,19,0.05);
+    position: relative;
+  }
+
+  .board::before {
+    content: '';
+    position: absolute;
+    inset: 8px;
+    border-radius: 14px;
+    border: 1px solid rgba(218,165,32,0.1);
+    pointer-events: none;
+  }
+
+  .player-label {
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+
+  .player-label.nord { color: var(--nord-couleur); }
+  .player-label.sud { color: var(--sud-couleur); }
+
+  .row {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 6px 0;
+  }
+
+  .pit {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #3D1F0A, #1A0A00);
+    border: 2px solid rgba(139,69,19,0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    box-shadow: inset 0 4px 8px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.3);
+    user-select: none;
+  }
+
+  .pit:hover:not(.empty):not(.disabled) {
+    transform: scale(1.08);
+    box-shadow: inset 0 4px 8px rgba(0,0,0,0.3), 0 4px 16px rgba(218,165,32,0.4);
+    border-color: var(--or);
+  }
+
+  .pit.legal {
+    border-color: var(--or);
+    animation: pulse-legal 1.5s infinite;
+  }
+
+  .pit.legal.nord-legal { border-color: var(--nord-couleur); animation: pulse-nord 1.5s infinite; }
+  .pit.legal.sud-legal { border-color: var(--sud-couleur); animation: pulse-sud 1.5s infinite; }
+
+  @keyframes pulse-legal {
+    0%,100% { box-shadow: inset 0 4px 8px rgba(0,0,0,0.4), 0 0 8px rgba(218,165,32,0.3); }
+    50% { box-shadow: inset 0 4px 8px rgba(0,0,0,0.4), 0 0 20px rgba(218,165,32,0.6); }
+  }
+
+  @keyframes pulse-nord {
+    0%,100% { box-shadow: inset 0 4px 8px rgba(0,0,0,0.4), 0 0 8px rgba(232,160,32,0.3); }
+    50% { box-shadow: inset 0 4px 8px rgba(0,0,0,0.4), 0 0 20px rgba(232,160,32,0.7); }
+  }
+
+  @keyframes pulse-sud {
+    0%,100% { box-shadow: inset 0 4px 8px rgba(0,0,0,0.4), 0 0 8px rgba(76,175,80,0.3); }
+    50% { box-shadow: inset 0 4px 8px rgba(0,0,0,0.4), 0 0 20px rgba(76,175,80,0.7); }
+  }
+
+  .pit.empty { cursor: not-allowed; opacity: 0.4; }
+  .pit.disabled { cursor: not-allowed; }
+  .pit.last-move { border-color: rgba(255,255,255,0.5); }
+
+  .pit.animated {
+    animation: seed-land 0.3s ease;
+  }
+
+  @keyframes seed-land {
+    0% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+
+  .pit-count {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--texte);
+    line-height: 1;
+  }
+
+  .pit-index {
+    font-size: 9px;
+    color: rgba(196,169,106,0.4);
+    margin-top: 2px;
+  }
+
+  .seeds-visual {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2px;
+    max-width: 48px;
+    position: absolute;
+    bottom: 6px;
+  }
+
+  .seed-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--graine);
+    border: 1px solid var(--graine-bord);
+  }
+
+  .divider {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(139,69,19,0.5), rgba(218,165,32,0.3), rgba(139,69,19,0.5), transparent);
+    margin: 12px 0;
+    border-radius: 1px;
+  }
+
+  /* MESSAGE */
+  .message-box {
+    margin-top: 16px;
+    background: var(--fond-clair);
+    border-radius: 12px;
+    padding: 14px 20px;
+    border-left: 4px solid var(--or);
+    font-size: 14px;
+    color: var(--texte);
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s;
+  }
+
+  .message-box.nord-msg { border-left-color: var(--nord-couleur); }
+  .message-box.sud-msg { border-left-color: var(--sud-couleur); }
+  .message-box.win-msg {
+    border-left-color: var(--or);
+    background: rgba(218,165,32,0.1);
+    font-size: 16px;
+    font-weight: 600;
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* CONTROLS */
+  .controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 10px 24px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+
+  .btn-primary {
+    background: var(--or);
+    color: var(--fond);
+  }
+
+  .btn-primary:hover {
+    background: #F0C040;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(218,165,32,0.4);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--texte-doux);
+    border: 1px solid rgba(196,169,106,0.3);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--or);
+    color: var(--or);
+  }
+
+  /* HISTORIQUE */
+  .history {
+    margin-top: 16px;
+    background: var(--fond-clair);
+    border-radius: 12px;
+    padding: 14px;
+    max-height: 120px;
+    overflow-y: auto;
+  }
+
+  .history-title {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--texte-doux);
+    margin-bottom: 8px;
+  }
+
+  .history-item {
+    font-size: 12px;
+    color: rgba(196,169,106,0.7);
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .history-item:last-child { border-bottom: none; }
+  .history-item .hn { color: var(--nord-couleur); font-weight: 600; }
+  .history-item .hs { color: var(--sud-couleur); font-weight: 600; }
+
+  /* LEGENDE */
+  .legend {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--texte-doux);
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid;
+  }
+
+  footer {
+    margin-top: 24px;
+    text-align: center;
+    font-size: 11px;
+    color: rgba(196,169,106,0.3);
+    letter-spacing: 1px;
+  }
+
+  @media (max-width: 600px) {
+    .pit { width: 44px; height: 44px; }
+    .pit-count { font-size: 16px; }
+    .row { gap: 4px; }
+    .seed-dot { width: 4px; height: 4px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>SONGHO</h1>
+  <p>Jeu traditionnel des peuples Ekang — Cameroun</p>
+</header>
+
+<div class="game-container">
+  <!-- SCORES -->
+  <div class="scores">
+    <div class="score-card nord" id="card-nord">
+      <div class="score-label">Joueur</div>
+      <div class="score-name">NORD</div>
+      <div class="score-value" id="score-nord">0</div>
+      <div class="score-bar-wrap">
+        <div class="score-bar" id="bar-nord" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="tour-badge" id="tour-badge">
+      Tour n°<span id="move-num">1</span><br/>
+      <small id="tour-label">En attente...</small>
+    </div>
+    <div class="score-card sud" id="card-sud">
+      <div class="score-label">Joueur</div>
+      <div class="score-name">SUD</div>
+      <div class="score-value" id="score-sud">0</div>
+      <div class="score-bar-wrap">
+        <div class="score-bar" id="bar-sud" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLATEAU -->
+  <div class="board">
+    <div class="player-label nord">↑ Nord — joue de gauche à droite (N0→N6→camp Sud) ↑</div>
+    <div class="row" id="row-nord"></div>
+    <div class="divider"></div>
+    <div class="row" id="row-sud"></div>
+    <div class="player-label sud">↓ Sud — joue de droite à gauche (S0→S6→camp Nord) ↓</div>
+  </div>
+
+  <!-- LEGENDE -->
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="border-color: var(--nord-couleur);"></div>
+      Cases jouables (Nord)
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="border-color: var(--sud-couleur);"></div>
+      Cases jouables (Sud)
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="border-color: rgba(255,255,255,0.3);"></div>
+      Dernier coup
+    </div>
+  </div>
+
+  <!-- MESSAGE -->
+  <div class="message-box" id="message">Chargement du jeu...</div>
+
+  <!-- CONTROLES -->
+  <div class="controls">
+    <button class="btn btn-primary" onclick="newGame()">🌱 Nouvelle Partie</button>
+    <button class="btn btn-secondary" onclick="toggleHistory()">📜 Historique</button>
+  </div>
+
+  <!-- HISTORIQUE -->
+  <div class="history" id="history-panel" style="display:none;">
+    <div class="history-title">Historique des coups</div>
+    <div id="history-list"></div>
+  </div>
+</div>
+
+<footer>
+  <p>Version 1 — Deux joueurs sur le même navigateur | HTML + CSS + JavaScript</p>
+</footer>
+
+<script>
+// ============================================================
+// MOTEUR DU JEU SONGHO — Version 1 (même navigateur)
+// Basé sur la formalisation complète du projet
+// ============================================================
+
+const RULES = {
+  pitsPerPlayer: 7,
+  initialSeeds: 5,
+  totalSeeds: 70,
+  victoryScore: 40,
+  lowBoardLimit: 10,
+  captureValues: [2, 3, 4],
+  maxNormalSow: 13
+};
+
+// Cycle de semaille complet
+const CYCLE = [
+  {p:"north",i:0},{p:"north",i:1},{p:"north",i:2},{p:"north",i:3},{p:"north",i:4},{p:"north",i:5},{p:"north",i:6},
+  {p:"south",i:6},{p:"south",i:5},{p:"south",i:4},{p:"south",i:3},{p:"south",i:2},{p:"south",i:1},{p:"south",i:0}
+];
+
+// ---- Utilitaires ----
+function other(p){ return p==="north"?"south":"north"; }
+function sum(a){ return a.reduce((t,v)=>t+v,0); }
+function samePos(a,b){ return a.p===b.p && a.i===b.i; }
+function cycleIndexOf(pos){ return CYCLE.findIndex(c=>samePos(c,pos)); }
+
+function nextPositionsAfter(source){
+  const start = cycleIndexOf(source);
+  const result = [];
+  for(let step=1; step<=13; step++){
+    result.push(CYCLE[(start+step)%14]);
+  }
+  return result;
+}
+
+function attackPit(p){ return p==="north"?{p:"north",i:6}:{p:"south",i:0}; }
+function opponentFirstPit(p){ return p==="north"?{p:"south",i:6}:{p:"north",i:0}; }
+
+function opponentPath(p){
+  return p==="north"
+    ?[{p:"south",i:6},{p:"south",i:5},{p:"south",i:4},{p:"south",i:3},{p:"south",i:2},{p:"south",i:1},{p:"south",i:0}]
+    :[{p:"north",i:0},{p:"north",i:1},{p:"north",i:2},{p:"north",i:3},{p:"north",i:4},{p:"north",i:5},{p:"north",i:6}];
+}
+
+function cloneState(s){
+  return {
+    board:{ north:[...s.board.north], south:[...s.board.south] },
+    scores:{ north:s.scores.north, south:s.scores.south },
+    currentPlayer:s.currentPlayer,
+    status:s.status,
+    winner:s.winner,
+    reason:s.reason,
+    moveNumber:s.moveNumber,
+    history:[...s.history]
+  };
+}
+
+function boardSeeds(s){ return sum(s.board.north)+sum(s.board.south); }
+function totalSeeds(s){ return s.scores.north+s.scores.south+boardSeeds(s); }
+
+// ---- Création de partie ----
+function createGame(startingPlayer="south"){
+  return {
+    board:{ north:[5,5,5,5,5,5,5], south:[5,5,5,5,5,5,5] },
+    scores:{ north:0, south:0 },
+    currentPlayer:startingPlayer,
+    status:"playing",
+    winner:null,
+    reason:null,
+    moveNumber:0,
+    history:[]
+  };
+}
+
+// ---- Semaille normale ----
+function sowNormal(state, player, pitIndex){
+  const seeds = state.board[player][pitIndex];
+  const source = {p:player, i:pitIndex};
+  const visited = [];
+  state.board[player][pitIndex] = 0;
+  const path = nextPositionsAfter(source);
+  for(let i=0; i<seeds; i++){
+    const pos = path[i];
+    state.board[pos.p][pos.i]++;
+    visited.push(pos);
+  }
+  return { visited, lastPosition:visited[visited.length-1], specialCapture:0 };
+}
+
+// ---- Semaille grenier ----
+function sowGranary(state, player, pitIndex){
+  const seeds = state.board[player][pitIndex];
+  const source = {p:player, i:pitIndex};
+  const visited = [];
+  let remaining = seeds;
+  let specialCapture = 0;
+  state.board[player][pitIndex] = 0;
+
+  // Tour complet
+  for(const pos of nextPositionsAfter(source)){
+    state.board[pos.p][pos.i]++;
+    visited.push(pos);
+    remaining--;
+  }
+
+  // Reste chez adversaire
+  const path = opponentPath(player);
+  for(let i=0; i<remaining; i++){
+    const pos = path[i % path.length];
+    const isLast = i===remaining-1;
+    const isFirst = samePos(pos, opponentFirstPit(player));
+    if(isLast && isFirst){
+      specialCapture++;
+      visited.push(pos);
+      continue;
+    }
+    state.board[pos.p][pos.i]++;
+    visited.push(pos);
+  }
+  return { visited, lastPosition:visited[visited.length-1], specialCapture };
+}
+
+function sow(state, player, pitIndex){
+  const seeds = state.board[player][pitIndex];
+  if(seeds<=0) throw new Error("Case vide.");
+  return seeds<=13 ? sowNormal(state,player,pitIndex) : sowGranary(state,player,pitIndex);
+}
+
+// ---- Capture ----
+function isCaptureValue(n){ return n===2||n===3||n===4; }
+
+function canStartCapture(state, player, last){
+  if(!last || last.p===player) return false;
+  if(samePos(last, opponentFirstPit(player))) return false;
+  return isCaptureValue(state.board[last.p][last.i]);
+}
+
+function captureChainPositions(state, player, last){
+  const path = opponentPath(player);
+  const lastIdx = path.findIndex(pos=>samePos(pos,last));
+  if(lastIdx<=0) return [];
+  const captured = [];
+  for(let idx=lastIdx; idx>=0; idx--){
+    const pos = path[idx];
+    const count = state.board[pos.p][pos.i];
+    if(!isCaptureValue(count)) break;
+    captured.push({p:pos.p, i:pos.i, seeds:count});
+  }
+  return captured;
+}
+
+function wouldEmptyOpponent(state, player, captureList){
+  const opp = other(player);
+  const remaining = [...state.board[opp]];
+  for(const c of captureList) remaining[c.i] -= c.seeds;
+  return sum(remaining)===0;
+}
+
+function applyCaptureIfAllowed(state, player, captureList){
+  if(captureList.length===0) return 0;
+  if(wouldEmptyOpponent(state, player, captureList)) return 0;
+  let total=0;
+  for(const c of captureList){
+    state.board[c.p][c.i] -= c.seeds;
+    total += c.seeds;
+  }
+  state.scores[player] += total;
+  return total;
+}
+
+function resolveCaptures(state, player, sowResult){
+  if(sowResult.specialCapture>0){
+    state.scores[player] += sowResult.specialCapture;
+    return { captured:sowResult.specialCapture, type:"special-granary" };
+  }
+  const last = sowResult.lastPosition;
+  if(!canStartCapture(state, player, last))
+    return { captured:0, type:"none" };
+  const captureList = captureChainPositions(state, player, last);
+  const captured = applyCaptureIfAllowed(state, player, captureList);
+  return {
+    captured,
+    type: captured>0 && captureList.length>1 ? "chain" : "normal",
+    cancelledStarvation: captured===0 && captureList.length>0
+  };
+}
+
+// ---- Coups interdits case d'attaque ----
+function isAttackPitMove(player, pitIndex){
+  const a = attackPit(player);
+  return a.p===player && a.i===pitIndex;
+}
+
+function wouldMoveCapture(state, player, pitIndex){
+  const sim = cloneState(state);
+  const sowing = sow(sim, player, pitIndex);
+  if(sowing.specialCapture>0) return true;
+  return canStartCapture(sim, player, sowing.lastPosition);
+}
+
+function isForbiddenAttackMove(state, player, pitIndex){
+  if(!isAttackPitMove(player, pitIndex)) return false;
+  const seeds = state.board[player][pitIndex];
+  if(seeds===1) return true;
+  if(seeds===2) return !wouldMoveCapture(state, player, pitIndex);
+  return false;
+}
+
+// ---- Solidarité ----
+function opponentCampIsEmpty(state, player){ return sum(state.board[other(player)])===0; }
+
+function countDeliveredToOpponent(state, player, pitIndex){
+  const sim = cloneState(state);
+  const before = sum(sim.board[other(player)]);
+  sow(sim, player, pitIndex);
+  return sum(sim.board[other(player)]) - before;
+}
+
+function ownNonEmptyMoves(state, player){
+  const moves=[];
+  for(let i=0;i<7;i++) if(state.board[player][i]>0) moves.push({player,pitIndex:i});
+  return moves;
+}
+
+function getSolidarityMoves(state, player){
+  const candidates = ownNonEmptyMoves(state, player);
+  const ordinary = candidates.filter(m=>!isForbiddenAttackMove(state,player,m.pitIndex));
+  const enriched = ordinary.map(m=>({...m, delivered:countDeliveredToOpponent(state,player,m.pitIndex)}));
+  const atLeast7 = enriched.filter(m=>m.delivered>=7);
+  if(atLeast7.length>0) return atLeast7;
+  const positive = enriched.filter(m=>m.delivered>0);
+  if(positive.length>0){
+    const maxD = Math.max(...positive.map(m=>m.delivered));
+    return positive.filter(m=>m.delivered===maxD);
+  }
+  const forced = candidates.filter(m=>isAttackPitMove(player,m.pitIndex) && [1,2].includes(state.board[player][m.pitIndex]));
+  return forced.map(m=>({...m, forcedDonation:true}));
+}
+
+function getLegalMoves(state){
+  if(state.status!=="playing") return [];
+  const player = state.currentPlayer;
+  if(opponentCampIsEmpty(state, player)) return getSolidarityMoves(state, player);
+  return ownNonEmptyMoves(state, player).filter(m=>!isForbiddenAttackMove(state,player,m.pitIndex));
+}
+
+// ---- Don forcé ----
+function applyForcedDonation(state, player, pitIndex){
+  const seeds = state.board[player][pitIndex];
+  state.board[player][pitIndex]=0;
+  state.scores[other(player)] += seeds;
+  return { type:"forced-donation", donated:seeds };
+}
+
+// ---- Fin de partie ----
+function collectRemainingSeeds(state){
+  state.scores.north += sum(state.board.north);
+  state.scores.south += sum(state.board.south);
+  state.board.north = [0,0,0,0,0,0,0];
+  state.board.south = [0,0,0,0,0,0,0];
+}
+
+function computeWinner(state){
+  if(state.scores.north>=40) return "north";
+  if(state.scores.south>=40) return "south";
+  return "draw";
+}
+
+function resolveEndGameAfterMove(state){
+  if(state.scores.north>=40||state.scores.south>=40){
+    state.status="ended"; state.reason="score_40"; state.winner=computeWinner(state); return;
+  }
+  if(boardSeeds(state)<10){
+    collectRemainingSeeds(state);
+    state.status="ended"; state.reason="low_board"; state.winner=computeWinner(state); return;
+  }
+}
+
+function resolveEndGameBeforeTurn(state){
+  const moves = getLegalMoves(state);
+  if(moves.length>0) return;
+  collectRemainingSeeds(state);
+  state.status="ended"; state.reason="solidarity_impossible"; state.winner=computeWinner(state);
+}
+
+function assertTotalSeeds(state){
+  const total = totalSeeds(state);
+  if(total!==70) throw new Error("Invariant cassé : "+total+" graines au lieu de 70.");
+}
+
+function validateMove(state, move){
+  if(state.status!=="playing") return {ok:false, reason:"Partie terminée."};
+  if(move.player!==state.currentPlayer) return {ok:false, reason:"Pas ton tour."};
+  if(move.pitIndex<0||move.pitIndex>6) return {ok:false, reason:"Case inconnue."};
+  if(state.board[move.player][move.pitIndex]<=0) return {ok:false, reason:"Case vide."};
+  const legal = getLegalMoves(state);
+  const isLegal = legal.some(m=>m.player===move.player && m.pitIndex===move.pitIndex);
+  if(!isLegal) return {ok:false, reason:"Coup interdit par les règles."};
+  return {ok:true};
+}
+
+function applyMove(state, move){
+  const v = validateMove(state, move);
+  if(!v.ok) return { state, ok:false, error:v.reason };
+
+  const legal = getLegalMoves(state).find(m=>m.player===move.player&&m.pitIndex===move.pitIndex);
+  let actionResult;
+
+  if(legal && legal.forcedDonation){
+    actionResult = applyForcedDonation(state, move.player, move.pitIndex);
+  } else {
+    const sowing = sow(state, move.player, move.pitIndex);
+    const capture = resolveCaptures(state, move.player, sowing);
+    actionResult = { type:"sow", sowing, capture };
+  }
+
+  state.moveNumber++;
+  state.history.push({
+    moveNumber:state.moveNumber,
+    player:move.player,
+    pitIndex:move.pitIndex,
+    result:actionResult
+  });
+
+  resolveEndGameAfterMove(state);
+  if(state.status==="playing"){
+    state.currentPlayer = other(state.currentPlayer);
+    resolveEndGameBeforeTurn(state);
+  }
+  assertTotalSeeds(state);
+  return { state, ok:true, action:actionResult };
+}
+
+// ============================================================
+// INTERFACE UTILISATEUR
+// ============================================================
+
+let gameState;
+let lastMovePit = null;
+
+function initUI(){
+  renderBoard();
+  renderScores();
+  renderMessage();
+  renderLegalMoves();
+}
+
+function renderBoard(){
+  const rowNord = document.getElementById('row-nord');
+  const rowSud = document.getElementById('row-sud');
+  rowNord.innerHTML='';
+  rowSud.innerHTML='';
+
+  // Nord : N0 à N6
+  for(let i=0;i<7;i++){
+    rowNord.appendChild(createPit('north', i));
+  }
+  // Sud : S0 à S6 (affichés dans l'ordre visuel)
+  // Sud est en face, donc S6 à gauche, S0 à droite
+  for(let i=6;i>=0;i--){
+    rowSud.appendChild(createPit('south', i));
+  }
+}
+
+function createPit(player, pitIndex){
+  const seeds = gameState.board[player][pitIndex];
+  const pit = document.createElement('div');
+  pit.className = 'pit';
+  pit.id = `pit-${player}-${pitIndex}`;
+  if(seeds===0) pit.classList.add('empty');
+  if(lastMovePit && lastMovePit.p===player && lastMovePit.i===pitIndex)
+    pit.classList.add('last-move');
+
+  const countEl = document.createElement('div');
+  countEl.className = 'pit-count';
+  countEl.textContent = seeds;
+
+  const indexEl = document.createElement('div');
+  indexEl.className = 'pit-index';
+  indexEl.textContent = player==='north'?`N${pitIndex}`:`S${pitIndex}`;
+
+  pit.appendChild(countEl);
+  pit.appendChild(indexEl);
+
+  if(seeds>0 && gameState.status==="playing"){
+    pit.onclick = () => handleClick(player, pitIndex);
+  }
+
+  return pit;
+}
+
+function renderLegalMoves(){
+  if(gameState.status!=="playing") return;
+  const legal = getLegalMoves(gameState);
+  legal.forEach(m=>{
+    const pit = document.getElementById(`pit-${m.player}-${m.pitIndex}`);
+    if(pit){
+      pit.classList.add('legal');
+      pit.classList.add(m.player==='north'?'nord-legal':'sud-legal');
+    }
+  });
+}
+
+function renderScores(){
+  document.getElementById('score-nord').textContent = gameState.scores.north;
+  document.getElementById('score-sud').textContent = gameState.scores.south;
+  document.getElementById('bar-nord').style.width = Math.min(100,(gameState.scores.north/40)*100)+'%';
+  document.getElementById('bar-sud').style.width = Math.min(100,(gameState.scores.south/40)*100)+'%';
+  document.getElementById('move-num').textContent = gameState.moveNumber+1;
+  document.getElementById('tour-label').textContent = gameState.status==="playing"
+    ? (gameState.currentPlayer==='north'?'Tour de Nord':'Tour de Sud')
+    : 'Partie terminée';
+
+  const cNord = document.getElementById('card-nord');
+  const cSud = document.getElementById('card-sud');
+  cNord.classList.toggle('active', gameState.currentPlayer==='north' && gameState.status==="playing");
+  cSud.classList.toggle('active', gameState.currentPlayer==='south' && gameState.status==="playing");
+}
+
+function renderMessage(msg, type){
+  const box = document.getElementById('message');
+  box.className = 'message-box';
+  if(!msg){
+    if(gameState.status==="ended"){
+      const w = gameState.winner;
+      if(w==="draw") box.textContent = "🤝 Match nul ! Les deux joueurs sont à égalité.";
+      else box.textContent = `🏆 Victoire de ${w==='north'?'NORD':'SUD'} avec ${gameState.scores[w]} graines ! (${gameState.reason==='score_40'?'40 graines atteintes':gameState.reason})`;
+      box.classList.add('win-msg');
+    } else {
+      const p = gameState.currentPlayer;
+      const legal = getLegalMoves(gameState);
+      box.textContent = `${p==='north'?'⬆️ NORD':'⬇️ SUD'} — Choisissez une case (${legal.length} coups possibles)`;
+      box.classList.add(p==='north'?'nord-msg':'sud-msg');
+    }
+  } else {
+    box.textContent = msg;
+    if(type) box.classList.add(type+'-msg');
+  }
+}
+
+function renderHistory(){
+  const list = document.getElementById('history-list');
+  if(!list) return;
+  list.innerHTML = '';
+  const last10 = gameState.history.slice(-10).reverse();
+  last10.forEach(h=>{
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    const who = h.player==='north'?'<span class="hn">Nord</span>':'<span class="hs">Sud</span>';
+    const pos = h.player==='north'?`N${h.pitIndex}`:`S${h.pitIndex}`;
+    let detail = '';
+    if(h.result.type==='forced-donation') detail = `don forcé (${h.result.donated} gr.)`;
+    else if(h.result.capture){
+      if(h.result.capture.captured>0) detail = `+${h.result.capture.captured} gr. capturées`;
+      else detail = 'pas de capture';
+    }
+    item.innerHTML = `#${h.moveNumber} ${who} → ${pos} ${detail?'| '+detail:''}`;
+    list.appendChild(item);
+  });
+}
+
+function handleClick(player, pitIndex){
+  if(gameState.status!=="playing") return;
+  if(player!==gameState.currentPlayer){
+    renderMessage(`⚠️ Ce n'est pas le tour de ${player==='north'?'Nord':'Sud'} !`, player);
+    return;
+  }
+  const result = applyMove(gameState, { player, pitIndex });
+  if(!result.ok){
+    renderMessage('⚠️ '+result.error, player);
+    return;
+  }
+  gameState = result.state;
+  lastMovePit = {p:player, i:pitIndex};
+
+  // Construire message de résultat
+  let msg = '';
+  if(result.action.type==='forced-donation'){
+    msg = `Don forcé : ${result.action.donated} graine(s) transférée(s) à l'adversaire.`;
+  } else if(result.action.capture){
+    const c = result.action.capture;
+    if(c.captured>0){
+      msg = `✅ ${c.captured} graine(s) capturée(s) ${c.type==='chain'?'(prise à la chaîne)':''}!`;
+    } else if(c.cancelledStarvation){
+      msg = `⛔ Capture annulée — ne pas affamer l'adversaire.`;
+    }
+  }
+
+  renderBoard();
+  renderScores();
+  renderLegalMoves();
+  renderMessage(msg || null, player);
+  renderHistory();
+
+  // Animation pit joué
+  const pitEl = document.getElementById(`pit-${player}-${pitIndex}`);
+  if(pitEl){ pitEl.classList.add('animated'); setTimeout(()=>pitEl.classList.remove('animated'),400); }
+}
+
+function newGame(){
+  gameState = createGame("south");
+  lastMovePit = null;
+  initUI();
+  renderHistory();
+  renderMessage(null);
+}
+
+function toggleHistory(){
+  const panel = document.getElementById('history-panel');
+  panel.style.display = panel.style.display==='none'?'block':'none';
+  renderHistory();
+}
+
+// Démarrage
+gameState = createGame("south");
+initUI();
+renderMessage(null);
+</script>
+</body>
+</html>
